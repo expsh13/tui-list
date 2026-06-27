@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
   clampIndex,
+  getCalendarDays,
   getSelectedIndexAfterRemoval,
   isValidDueDate,
+  moveDueDateByDays,
+  moveDueDateByMonths,
   removeTodoAt,
   setTodoDueDateAt,
   toggleTodoAt,
@@ -34,6 +37,19 @@ describe("todo state", () => {
     expect(isValidDueDate("2026-06-27")).toBe(true);
     expect(isValidDueDate("2026-02-30")).toBe(false);
     expect(isValidDueDate("06-27-2026")).toBe(false);
+  });
+
+  it("moves due dates through the calendar", () => {
+    expect(moveDueDateByDays("2026-06-27", 7)).toBe("2026-07-04");
+    expect(moveDueDateByMonths("2026-01-31", 1)).toBe("2026-02-28");
+  });
+
+  it("builds a six-week calendar grid", () => {
+    const days = getCalendarDays("2026-06-27");
+
+    expect(days).toHaveLength(42);
+    expect(days[0]?.date).toBe("2026-05-31");
+    expect(days[27]?.date).toBe("2026-06-27");
   });
 
   it("removes a todo and keeps selection valid", () => {
