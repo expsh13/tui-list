@@ -14,10 +14,12 @@ import {
   clampIndex,
   getSelectedIndexAfterRemoval,
   getTodayDueDate,
+  getTodoIndexById,
   moveDueDateByDays,
   moveDueDateByMonths,
   removeTodoAt,
   setTodoDueDateAt,
+  sortTodosByDueDate,
   toggleTodoAt,
   updateTodoTextAt,
   type Todo,
@@ -41,7 +43,23 @@ export const App = () => {
   const [calendarDate, setCalendarDate] = useState(getTodayDueDate());
   const [message, setMessage] = useState("");
 
-  const selectedTodo = todos[selectedIndex];
+  const sortedTodos = sortTodosByDueDate(todos);
+  const selectedTodo = sortedTodos[selectedIndex];
+  const selectedTodoIndex = selectedTodo ? getTodoIndexById(todos, selectedTodo.id) : -1;
+
+  const updateTodos = (nextTodos: Todo[], selectedTodoId = selectedTodo?.id) => {
+    setTodos(nextTodos);
+
+    if (selectedTodoId === undefined) {
+      setSelectedIndex((currentIndex) => clampIndex(currentIndex, nextTodos.length));
+      return;
+    }
+
+    const nextSelectedIndex = sortTodosByDueDate(nextTodos).findIndex(
+      (todo) => todo.id === selectedTodoId,
+    );
+    setSelectedIndex(clampIndex(nextSelectedIndex, nextTodos.length));
+  };
 
   useInput((input, key) => {
     if (inputMode === "add" || inputMode === "edit") {
@@ -50,8 +68,7 @@ export const App = () => {
 
         if (inputMode === "add" && text.length > 0) {
           const nextTodo = { id: Date.now(), text, done: false };
-          setTodos((currentTodos) => [...currentTodos, nextTodo]);
-          setSelectedIndex(todos.length);
+          updateTodos([...todos, nextTodo], nextTodo.id);
         }
 
         if (inputMode === "edit") {
@@ -60,7 +77,7 @@ export const App = () => {
             return;
           }
 
-          setTodos((currentTodos) => updateTodoTextAt(currentTodos, selectedIndex, text));
+          updateTodos(updateTodoTextAt(todos, selectedTodoIndex, text));
           setMessage("todo updated");
         }
 
@@ -113,14 +130,14 @@ export const App = () => {
       }
 
       if (key.return || input === " " || input.includes("\r") || input.includes("\n")) {
-        setTodos((currentTodos) => setTodoDueDateAt(currentTodos, selectedIndex, calendarDate));
+        updateTodos(setTodoDueDateAt(todos, selectedTodoIndex, calendarDate));
         setMessage(`date set: ${calendarDate}`);
         setInputMode("list");
         return;
       }
 
       if (input === "c") {
-        setTodos((currentTodos) => setTodoDueDateAt(currentTodos, selectedIndex));
+        updateTodos(setTodoDueDateAt(todos, selectedTodoIndex));
         setMessage("date cleared");
         setInputMode("list");
         return;
@@ -164,18 +181,18 @@ export const App = () => {
     }
 
     if (input === "j" || key.downArrow) {
-      setSelectedIndex((currentIndex) => clampIndex(currentIndex + 1, todos.length));
+      setSelectedIndex((currentIndex) => clampIndex(currentIndex + 1, sortedTodos.length));
       return;
     }
 
     if (input === "k" || key.upArrow) {
-      setSelectedIndex((currentIndex) => clampIndex(currentIndex - 1, todos.length));
+      setSelectedIndex((currentIndex) => clampIndex(currentIndex - 1, sortedTodos.length));
       return;
     }
 
     if (input === " ") {
       if (selectedTodo) {
-        setTodos((currentTodos) => toggleTodoAt(currentTodos, selectedIndex));
+        updateTodos(toggleTodoAt(todos, selectedTodoIndex));
         setMessage("");
       }
 
@@ -206,8 +223,10 @@ export const App = () => {
     }
 
     if (input === "d") {
-      setTodos((currentTodos) => removeTodoAt(currentTodos, selectedIndex));
-      setSelectedIndex((currentIndex) => getSelectedIndexAfterRemoval(currentIndex, todos.length));
+      setTodos(removeTodoAt(todos, selectedTodoIndex));
+      setSelectedIndex((currentIndex) =>
+        getSelectedIndexAfterRemoval(currentIndex, sortedTodos.length),
+      );
       setMessage("");
     }
   });
@@ -217,10 +236,10 @@ export const App = () => {
       <Text bold>Todo List</Text>
 
       <Box flexDirection="column" marginY={1}>
-        {todos.length === 0 ? (
+        {sortedTodos.length === 0 ? (
           <Text dimColor>todo はありません</Text>
         ) : (
-          todos.map((todo, index) => {
+          sortedTodos.map((todo, index) => {
             const isSelected = index === selectedIndex;
             const marker = isSelected ? ">" : " ";
             const checkbox = todo.done ? "[x]" : "[ ]";

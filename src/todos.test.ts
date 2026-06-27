@@ -3,11 +3,13 @@ import {
   clampIndex,
   getCalendarDays,
   getSelectedIndexAfterRemoval,
+  getTodoIndexById,
   isValidDueDate,
   moveDueDateByDays,
   moveDueDateByMonths,
   removeTodoAt,
   setTodoDueDateAt,
+  sortTodosByDueDate,
   toggleTodoAt,
   updateTodoTextAt,
   type Todo,
@@ -62,5 +64,20 @@ describe("todo state", () => {
 
     expect(nextTodos).toHaveLength(2);
     expect(getSelectedIndexAfterRemoval(2, todos.length)).toBe(1);
+  });
+
+  it("finds a todo by id", () => {
+    expect(getTodoIndexById(todos, 2)).toBe(1);
+  });
+
+  it("sorts todos by due date with done todos last", () => {
+    const sortedTodos = sortTodosByDueDate([
+      { id: 1, text: "no date", done: false },
+      { id: 2, text: "later", done: false, dueDate: "2026-06-27" },
+      { id: 3, text: "earlier", done: false, dueDate: "2026-01-01" },
+      { id: 4, text: "done earlier", done: true, dueDate: "2025-01-01" },
+    ]);
+
+    expect(sortedTodos.map((todo) => todo.id)).toEqual([3, 2, 1, 4]);
   });
 });

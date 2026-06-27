@@ -37,6 +37,30 @@ export const setTodoDueDateAt = (todos: Todo[], index: number, dueDate?: string)
 export const removeTodoAt = (todos: Todo[], index: number) =>
   todos.filter((_, todoIndex) => todoIndex !== index);
 
+export const getTodoIndexById = (todos: Todo[], id: number) =>
+  todos.findIndex((todo) => todo.id === id);
+
+export const sortTodosByDueDate = (todos: Todo[]) =>
+  [...todos].sort((firstTodo, secondTodo) => {
+    if (firstTodo.done !== secondTodo.done) {
+      return firstTodo.done ? 1 : -1;
+    }
+
+    if (firstTodo.dueDate && secondTodo.dueDate) {
+      return firstTodo.dueDate.localeCompare(secondTodo.dueDate);
+    }
+
+    if (firstTodo.dueDate) {
+      return -1;
+    }
+
+    if (secondTodo.dueDate) {
+      return 1;
+    }
+
+    return firstTodo.id - secondTodo.id;
+  });
+
 export const getSelectedIndexAfterRemoval = (selectedIndex: number, todoCount: number) =>
   clampIndex(selectedIndex, todoCount - 1);
 
