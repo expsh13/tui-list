@@ -28,6 +28,9 @@ export const clampIndex = (value: number, length: number) => {
 export const toggleTodoAt = (todos: Todo[], index: number) =>
   todos.map((todo, todoIndex) => (todoIndex === index ? { ...todo, done: !todo.done } : todo));
 
+export const updateTodoTextAt = (todos: Todo[], index: number, text: string) =>
+  todos.map((todo, todoIndex) => (todoIndex === index ? { ...todo, text } : todo));
+
 export const setTodoDueDateAt = (todos: Todo[], index: number, dueDate?: string) =>
   todos.map((todo, todoIndex) => (todoIndex === index ? { ...todo, dueDate } : todo));
 

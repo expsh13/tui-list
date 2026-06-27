@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { Box, Text, useApp, useInput } from "ink";
 import { CalendarView } from "./CalendarView";
+import { TextInputLine } from "./TextInputLine";
+import {
+  clampTextCursor,
+  getTextBeforeLineBreak,
+  getTextLength,
+  insertTextAt,
+  removeTextAt,
+  removeTextBefore,
+} from "./textInput";
 import {
   clampIndex,
   getSelectedIndexAfterRemoval,
@@ -10,10 +19,11 @@ import {
   removeTodoAt,
   setTodoDueDateAt,
   toggleTodoAt,
+  updateTodoTextAt,
   type Todo,
 } from "./todos";
 
-type InputMode = "list" | "add" | "calendar";
+type InputMode = "list" | "add" | "edit" | "calendar";
 
 const initialTodos: Todo[] = [
   { id: 1, text: "Ink で todo list を作る", done: false },
@@ -27,40 +37,70 @@ export const App = () => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [inputMode, setInputMode] = useState<InputMode>("list");
   const [draft, setDraft] = useState("");
+  const [draftCursor, setDraftCursor] = useState(0);
   const [calendarDate, setCalendarDate] = useState(getTodayDueDate());
   const [message, setMessage] = useState("");
 
   const selectedTodo = todos[selectedIndex];
 
   useInput((input, key) => {
-    if (inputMode === "add") {
+    if (inputMode === "add" || inputMode === "edit") {
       if (key.return || input.includes("\r") || input.includes("\n")) {
-        const text = `${draft}${input.replaceAll("\r", "").replaceAll("\n", "")}`.trim();
+        const text = insertTextAt(draft, draftCursor, getTextBeforeLineBreak(input)).trim();
 
-        if (text.length > 0) {
+        if (inputMode === "add" && text.length > 0) {
           const nextTodo = { id: Date.now(), text, done: false };
           setTodos((currentTodos) => [...currentTodos, nextTodo]);
           setSelectedIndex(todos.length);
         }
 
+        if (inputMode === "edit") {
+          if (text.length === 0) {
+            setMessage("todo text cannot be empty");
+            return;
+          }
+
+          setTodos((currentTodos) => updateTodoTextAt(currentTodos, selectedIndex, text));
+          setMessage("todo updated");
+        }
+
         setDraft("");
+        setDraftCursor(0);
         setInputMode("list");
         return;
       }
 
       if (key.escape) {
         setDraft("");
+        setDraftCursor(0);
         setInputMode("list");
         return;
       }
 
-      if (key.backspace || key.delete) {
-        setDraft((currentDraft) => currentDraft.slice(0, -1));
+      if (key.leftArrow) {
+        setDraftCursor((currentCursor) => clampTextCursor(currentCursor - 1, draft));
+        return;
+      }
+
+      if (key.rightArrow) {
+        setDraftCursor((currentCursor) => clampTextCursor(currentCursor + 1, draft));
+        return;
+      }
+
+      if (key.backspace) {
+        setDraft((currentDraft) => removeTextBefore(currentDraft, draftCursor));
+        setDraftCursor((currentCursor) => clampTextCursor(currentCursor - 1, draft));
+        return;
+      }
+
+      if (key.delete) {
+        setDraft((currentDraft) => removeTextAt(currentDraft, draftCursor));
         return;
       }
 
       if (input.length > 0 && !key.ctrl && !key.meta) {
-        setDraft((currentDraft) => currentDraft + input);
+        setDraft((currentDraft) => insertTextAt(currentDraft, draftCursor, input));
+        setDraftCursor((currentCursor) => currentCursor + getTextLength(input));
       }
 
       return;
@@ -144,7 +184,16 @@ export const App = () => {
 
     if (input === "a") {
       setDraft("");
+      setDraftCursor(0);
       setInputMode("add");
+      setMessage("");
+      return;
+    }
+
+    if (input === "e" && selectedTodo) {
+      setDraft(selectedTodo.text);
+      setDraftCursor(getTextLength(selectedTodo.text));
+      setInputMode("edit");
       setMessage("");
       return;
     }
@@ -186,10 +235,13 @@ export const App = () => {
         )}
       </Box>
 
-      {inputMode === "add" && <Text>{`+ ${draft}`}</Text>}
+      {inputMode === "add" && <TextInputLine label="+ " value={draft} cursor={draftCursor} />}
+      {inputMode === "edit" && <TextInputLine label="edit: " value={draft} cursor={draftCursor} />}
       {inputMode === "calendar" && <CalendarView focusedDate={calendarDate} />}
       {inputMode === "list" && (
-        <Text dimColor>j/k or ↑/↓: move space: toggle a: add t: calendar d: delete q: quit</Text>
+        <Text dimColor>
+          j/k or ↑/↓: move space: toggle a: add e: edit t: calendar d: delete q: quit
+        </Text>
       )}
       {message.length > 0 && <Text color="yellow">{message}</Text>}
     </Box>

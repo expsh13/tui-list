@@ -9,6 +9,7 @@ import {
   removeTodoAt,
   setTodoDueDateAt,
   toggleTodoAt,
+  updateTodoTextAt,
   type Todo,
 } from "./todos";
 
@@ -27,6 +28,10 @@ describe("todo state", () => {
 
   it("toggles a todo", () => {
     expect(toggleTodoAt(todos, 1)[1]?.done).toBe(true);
+  });
+
+  it("updates todo text", () => {
+    expect(updateTodoTextAt(todos, 0, "updated")[0]?.text).toBe("updated");
   });
 
   it("sets a due date", () => {
