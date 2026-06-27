@@ -20,5 +20,9 @@
       "version": "11.9.0",
       "onFail": "download"
     }
+  },
+  "dependencies": {
+    "ink": "^7.1.0",
+    "react": "^19.2.7"
   }
 }
