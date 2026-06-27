@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, Text, useApp, useInput } from "ink";
 import { CalendarView } from "./CalendarView";
 import { TextInputLine } from "./TextInputLine";
+import { loadTodos, saveTodos } from "./storage";
 import {
   clampTextCursor,
   getTextBeforeLineBreak,
@@ -47,8 +48,34 @@ export const App = () => {
   const selectedTodo = sortedTodos[selectedIndex];
   const selectedTodoIndex = selectedTodo ? getTodoIndexById(todos, selectedTodo.id) : -1;
 
+  useEffect(() => {
+    let isMounted = true;
+
+    loadTodos()
+      .then((savedTodos) => {
+        if (!isMounted || !savedTodos) {
+          return;
+        }
+
+        setTodos(savedTodos);
+        setSelectedIndex((currentIndex) => clampIndex(currentIndex, savedTodos.length));
+      })
+      .catch(() => {
+        if (isMounted) {
+          setMessage("failed to load saved todos");
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const updateTodos = (nextTodos: Todo[], selectedTodoId = selectedTodo?.id) => {
     setTodos(nextTodos);
+    void saveTodos(nextTodos).catch(() => {
+      setMessage("failed to save todos");
+    });
 
     if (selectedTodoId === undefined) {
       setSelectedIndex((currentIndex) => clampIndex(currentIndex, nextTodos.length));
@@ -223,9 +250,13 @@ export const App = () => {
     }
 
     if (input === "d") {
-      setTodos(removeTodoAt(todos, selectedTodoIndex));
+      const nextTodos = removeTodoAt(todos, selectedTodoIndex);
+      setTodos(nextTodos);
+      void saveTodos(nextTodos).catch(() => {
+        setMessage("failed to save todos");
+      });
       setSelectedIndex((currentIndex) =>
-        getSelectedIndexAfterRemoval(currentIndex, sortedTodos.length),
+        getSelectedIndexAfterRemoval(currentIndex, nextTodos.length),
       );
       setMessage("");
     }
