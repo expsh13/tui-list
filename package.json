@@ -4,12 +4,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vp dev",
-    "build": "tsc && vp build",
+    "dev": "vp pack src/main.tsx --out-dir dist --watch",
+    "build": "tsc && vp pack src/main.tsx --out-dir dist",
     "preview": "vp preview",
-    "prepare": "vp config"
+    "prepare": "vp config",
+    "start": "node dist/main.mjs",
+    "tui": "vp run build && vp run start"
+  },
+  "dependencies": {
+    "ink": "^7.1.0",
+    "react": "^19.2.7"
   },
   "devDependencies": {
+    "@types/react": "^19.2.17",
     "typescript": "~6.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:"
@@ -20,9 +27,5 @@
       "version": "11.9.0",
       "onFail": "download"
     }
-  },
-  "dependencies": {
-    "ink": "^7.1.0",
-    "react": "^19.2.7"
   }
 }
